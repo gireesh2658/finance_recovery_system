@@ -236,20 +236,7 @@ apps/
 
 ---
 
-## Running Tests
 
-Execute the Vitest suite:
-```bash
-npm run test --workspace=apps/api
-```
-*(Current test suite: 227 passed, 2 failed, 2 skipped. The two failures are known test-infrastructure limitations: SQLite foreign-key lock during parallel teardown, and a Vitest timeout during a heavy `execSync` child process evaluation test).*
-
-Run the Evaluation Benchmark:
-```bash
-npm run eval:real --workspace=apps/api
-```
-
----
 
 ## Limitations
 
@@ -283,10 +270,3 @@ The system enforces a strict boundary between reasoning and execution.
 
 ---
 
-## Documentation
-
-- [Architecture](docs/architecture.md) (Locally deleted; available in history)
-- [Evaluation](docs/evaluation.md) (Locally deleted; available in history)
-- [Demo Script](docs/demo_script.md) (Locally deleted; available in history)
-
-*(Note: Some extended documentation was removed from the primary branch during cleanup but is available in earlier commits).*
