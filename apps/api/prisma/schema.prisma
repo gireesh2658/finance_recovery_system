@@ -1,0 +1,155 @@
+// Prisma schema for AI Revenue Recovery Agent
+// Database: SQLite (development/hackathon)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================================================
+// ENUMS (Emulated for SQLite via String / CHECK constraints conceptually, but Prisma maps them to strings in SQLite)
+// Note: Prisma natively supports Enums in Postgres/MySQL. For SQLite, they are implemented as Strings.
+// We define them here as standard Prisma enums for type safety in the generated client.
+// ==================================================
+
+// ==================================================
+// ENTITIES
+// ==================================================
+
+model Customer {
+  id             String         @id @default(cuid())
+  externalId     String         @unique
+  name           String
+  email          String
+  phone          String?
+  riskTier       String         @default("MEDIUM") // LOW, MEDIUM, HIGH
+  totalPayments  Int            @default(0) // Derived aggregate cache
+  failedPayments Int            @default(0) // Derived aggregate cache
+  createdAt      DateTime       @default(now())
+  
+  payments       Payment[]
+  recoveryCases  RecoveryCase[]
+
+  @@index([email])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  externalId      String        @unique
+  customerId      String
+  customer        Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  amount          Int           // Stored in paise (smallest currency unit)
+  currency        String        @default("INR")
+  status          String        @default("PENDING") // SUCCESS, FAILED, PENDING
+  method          String        // CARD, UPI, NETBANKING, WALLET
+  failureCode     String?       // e.g. INSUFFICIENT_FUNDS
+  failureReason   String?       // Human-readable rationale
+  gatewayResponse String?       // JSON stored as string in SQLite
+  attemptedAt     DateTime
+  createdAt       DateTime      @default(now())
+
+  recoveryCase    RecoveryCase?
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model RecoveryCase {
+  id                  String             @id @default(cuid())
+  paymentId           String             @unique
+  payment             Payment            @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  customerId          String
+  customer            Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  status              String             @default("DETECTED") // DETECTED, DIAGNOSING, DIAGNOSED, STRATEGY_PENDING, POLICY_CHECK, POLICY_DENIED, ACTION_APPROVED, EXECUTING, VERIFYING, RETRY_PENDING, RECOVERED, ESCALATED, CLOSED
+  amountAtRisk        Int                // Stored in paise
+  amountRecovered     Int                @default(0) // Stored in paise
+  diagnosisCode       String?
+  diagnosisSummary    String?
+  diagnosisConfidence Float?             // 0.0 to 1.0
+  recommendedAction   String?            // Action type enum
+  finalOutcome        String             @default("PENDING") // RECOVERED, ESCALATED, ABANDONED, CLOSED, PENDING
+  attemptCount        Int                @default(0)
+  maxAttempts         Int                @default(3)
+  nextRetryAfter      DateTime?          // Cooldown window limit
+  priority            String             @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  resolvedAt          DateTime?
+
+  attempts            RecoveryAttempt[]
+  agentDecisions      AgentDecision[]
+  auditEvents         AuditEvent[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([priority])
+}
+
+model RecoveryAttempt {
+  id                  String        @id @default(cuid())
+  caseId              String
+  recoveryCase        RecoveryCase  @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  attemptNumber       Int
+  actionType          String        // RETRY_PAYMENT, SEND_PAYMENT_LINK, NOTIFY_CUSTOMER, ESCALATE_TO_HUMAN
+  actionInput         String        // JSON payload sent to tool
+  actionOutput        String?       // JSON response from tool
+  status              String        @default("PENDING") // PENDING, EXECUTING, SUCCESS, FAILED, SKIPPED
+  policyCheckPassed   Boolean       @default(false)
+  policyCheckDetails  String?       // JSON details of why it passed/failed
+  executionDurationMs Int?
+  createdAt           DateTime      @default(now())
+
+  auditEvents         AuditEvent[]
+
+  @@unique([caseId, attemptNumber]) // Ensure idempotency for attempt numbers
+  @@index([caseId])
+}
+
+model Policy {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  ruleType    String   // MAX_RETRIES, COOLDOWN, AMOUNT_LIMIT, ALLOWED_ACTIONS, TIME_WINDOW
+  conditions  String   // JSON string of rules
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([isActive, priority])
+}
+
+model AgentDecision {
+  id             String       @id @default(cuid())
+  caseId         String
+  recoveryCase   RecoveryCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  step           String       // DIAGNOSIS, STRATEGY_SELECTION, POLICY_CHECK, ACTION_EXECUTION, VERIFICATION
+  inputContext   String       // JSON string of provided context
+  decision       String       // JSON string of structured decision
+  rationale      String       // Human readable externally presentable rationale
+  confidence     Float?
+  modelUsed      String?
+  tokenCount     Int?
+  durationMs     Int
+  createdAt      DateTime     @default(now())
+
+  @@index([caseId])
+}
+
+model AuditEvent {
+  id          String           @id @default(cuid())
+  caseId      String?
+  recoveryCase RecoveryCase?   @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  attemptId   String?
+  attempt     RecoveryAttempt? @relation(fields: [attemptId], references: [id], onDelete: Restrict)
+  eventType   String           // e.g. CASE_CREATED, ACTION_EXECUTED
+  actor       String           // AGENT, POLICY_ENGINE, SYSTEM, HUMAN
+  details     String           // JSON string of event details
+  createdAt   DateTime         @default(now())
+
+  @@index([caseId, createdAt])
+  @@index([attemptId])
+}

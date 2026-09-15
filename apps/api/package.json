@@ -1,0 +1,36 @@
+{
+  "name": "@recovery/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "prisma:generate": "prisma generate",
+    "db:seed": "tsx src/seed/index.ts",
+    "ai:smoke": "tsx src/agent/reasoner/smoke.ts",
+    "eval:real": "tsx src/evaluation/run-real-eval.ts"
+  },
+  "prisma": {
+    "seed": "tsx src/seed/index.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.10.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "openai": "^7.8.0",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.2",
+    "@types/node": "^20",
+    "prisma": "^6.10.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5",
+    "vitest": "^4.1.11"
+  }
+}

@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Database
+*.db
+*.db-journal
+
+# Prisma
+# Note: Migrations ARE tracked in version control.
+
+# Evaluation Artifacts
+apps/api/*.json
+!apps/api/package.json
+!apps/api/tsconfig.json
+!apps/api/prisma/schema.json
+!apps/api/src/seed/groundTruth.json
+apps/api/*.txt
+
+# IDE
+.vscode/
+.idea/
+.agents/
+scratch/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
+npm-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Next.js
+apps/web/.next/

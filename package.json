@@ -1,0 +1,24 @@
+{
+  "name": "ai-revenue-recovery-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Revenue Recovery Agent — Autonomous policy-controlled recovery for failed payments",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev:api & npm run dev:web",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "build:api": "npm run build --workspace=apps/api",
+    "build:web": "npm run build --workspace=apps/web",
+    "typecheck": "npm run typecheck --workspace=apps/api && npm run typecheck --workspace=apps/web",
+    "typecheck:api": "npm run typecheck --workspace=apps/api",
+    "typecheck:web": "npm run typecheck --workspace=apps/web"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
